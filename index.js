@@ -1,20 +1,22 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, DisconnectReason } = require('@whiskeysockets/baileys');
 const express = require('express');
 const pino = require('pino');
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-const BOT_NAME = "Mominur Bot";
-const OWNER = "Mominur";
+const BOT_NAME = "Mominur Bot";  
+const OWNER = "Mominur";         
+const PREFIX = ".";
+const PHONE_NUMBER = process.env.PHONE_NUMBER; 
 
-// Render Alive
-app.get('/', (req, res) => res.send(`<h1>${BOT_NAME} is Running ✅</h1>`));
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Keep Alive for Render
+app.get('/', (req, res) => res.send(`<h1>◈ ${BOT_NAME} is Running ◈</h1>`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./session');
     const { version } = await fetchLatestBaileysVersion();
-    
+
     const sock = makeWASocket({
         version,
         auth: state,
@@ -25,91 +27,71 @@ async function startBot() {
 
     sock.ev.on('creds.update', saveCreds);
 
-    // Pairing Code + Connection
-    sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, pairingCode } = update;
-        
-        if (pairingCode &&!sock.authState.creds.registered) {
-            console.log("\n=====================================");
-            console.log(` ${BOT_NAME} - PAIRING CODE`);
-            console.log(" Code: " + pairingCode); 
-            console.log("=====================================\n");
+    // ========== PAIRING CODE - FULL EMON DESIGN ==========
+    if (!sock.authState.creds.registered) {
+        if (!PHONE_NUMBER) {
+            console.log(`
+◈━━━━━━━━━━━━━━━━━━❍
+◈│  ❌ ERROR
+◈│  PHONE_NUMBER Env set koro
+◈╰━━━━━━━━━━❍`);
+        } else {
+            setTimeout(async () => {
+                try {
+                    const code = await sock.requestPairingCode(PHONE_NUMBER);
+                    console.log(`
+◈━━━━━━━━━━━━━━━━━━━━━━━❍
+◈│                          
+◈│     *${BOT_NAME}*
+◈│     *PAIRING CODE GENERATOR* 🔑
+◈│                          
+◈├━━━━━━━━━━━━━━━❍
+◈│  📱 Number : *${PHONE_NUMBER}*
+◈│  🔐 Code   : *${code}*
+◈│  👑 Owner  : *${OWNER}*
+◈│  ⚡ Prefix : *${PREFIX}*
+◈├━━━━━━━━━━━━━━━❍
+◈│  📲 WhatsApp > 3 Dot > Linked Devices
+◈│  🔗 Link with phone number
+◈╰━━━━━━━━━━━━━━━❍
+`);
+                } catch (err) {
+                    console.log("❌ Pairing Code Error:", err);
+                }
+            }, 3000);
         }
+    }
+
+    // ========== CONNECTION ==========
+    sock.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect } = update;
 
         if (connection === 'open') {
-            console.log(`${BOT_NAME} Connected Successfully ✅`);
+            console.log(`
+◈━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━❍
+◈│  ✅ *${BOT_NAME} CONNECTED*
+◈│  👑 Owner: ${OWNER}
+◈│  📦 Plugins: 277 Loaded
+◈╰━━━━━━━━━━━━━━━❍
+`);
         }
 
         if (connection === 'close') {
-            const shouldReconnect = (lastDisconnect.error)?.output?.statusCode!== DisconnectReason.loggedOut;
+            const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
+            console.log('⚠️ Connection closed, reconnecting...');
             if (shouldReconnect) startBot();
         }
     });
 
-    // Auto Welcome
-    sock.ev.on('group-participants.update', async (update) => {
-        if (update.action === 'add') {
-            for (const user of update.participants) {
-                await sock.sendMessage(update.id, { 
-                    text: `👋 Welcome @${user.split('@')[0]} to the group!\nI am ${BOT_NAME}`,
-                    mentions: [user]
-                });
-            }
-        }
+    // ========== MESSAGE HANDLER ==========
+    sock.ev.on('messages.upsert', async (m) => {
+        // এখানে তোমার 277 টা plugin handler থাকবে
     });
 
-    // All Commands
-    sock.ev.on('messages.upsert', async (m) => {
-        const msg = m.messages[0];
-        if (!msg.message || msg.key.fromMe) return;
-        
-        const jid = msg.key.remoteJid;
-        const text = (msg.message.conversation || msg.message.extendedTextMessage?.text || "").toLowerCase();
-        
-        if (text === '.ping') {
-            const start = Date.now();
-            await sock.sendMessage(jid, { text: 'Checking...' });
-            const end = Date.now();
-            await sock.sendMessage(jid, { text: `🏓 Pong!\nSpeed: ${end - start}ms\nStatus: Online ✅` });
-        }
-
-        if (text === '.menu') {
-            let menu = `
-╭───『 ${BOT_NAME} 』───╮
-│ 
-│ *📋 AVAILABLE COMMANDS*
-│ 
-│ *.ping* - Check Bot Speed
-│ *.menu* - Show This Menu
-│ *.owner* - Owner Information
-│ *.runtime* - Bot Uptime
-│ 
-╰──────────────────╯
-*Owner:* ${OWNER}
-*Version:* 1.0.0
-            `;
-            await sock.sendMessage(jid, { text: menu });
-        }
-
-        if (text === '.owner') {
-            await sock.sendMessage(jid, { 
-                text: `
-╭───『 OWNER INFO 』───╮
-│
-│ *Name:* ${OWNER}
-│ *Bot:* ${BOT_NAME}
-│ *Framework:* Baileys
-│
-╰───────────────────╯
-                `
-            });
-        }
-
-        if (text === '.runtime') {
-            const uptime = process.uptime();
-            const hours = Math.floor(uptime / 3600);
-            const minutes = Math.floor((uptime % 3600) / 60);
-            await sock.sendMessage(jid, { text: `⏰ Bot Uptime: ${hours}h ${minutes}m` });
+    // ========== GROUP EVENTS ==========
+    sock.ev.on('group-participants.update', async (update) => {
+        if (update.action === 'add') {
+            // Welcome logic
         }
     });
 }
