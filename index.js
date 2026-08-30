@@ -11,7 +11,7 @@ const PHONE_NUMBER = process.env.PHONE_NUMBER;
 
 // Keep Alive for Render
 app.get('/', (req, res) => res.send(`<h1>◈ ${BOT_NAME} is Running ◈</h1>`));
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`✅ Server running on port ${PORT}`));
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./session');
