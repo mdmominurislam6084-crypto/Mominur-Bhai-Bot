@@ -1,8 +1,8 @@
-🚀 MOMINUR ISLAM BOT — Professional WhatsApp Multi-Device Bot
+🚀 MOMINUR-BHAI-WP- BOT — Professional WhatsApp Multi-Device Bot
 
 <p align="center">
   <img src="https://i.imgur.com/placeholder.png" width="180">
-</p><h1 align="center">⚡ MOMINUR ISLAM BOT ⚡</h1><p align="center">
+</p><h1 align="center">⚡ MOMINUR VHAI BOT ⚡</h1><p align="center">
 Professional WhatsApp Multi-Device Bot powered by Baileys
 </p>---
 
@@ -274,6 +274,6 @@ Restart bot and command loads automatically.
 ---
 
 <p align="center">
-⚡ MOMINUR ISLAM BOT ⚡Made with ❤️ by MOMINUR ISLAM
+⚡ MOMINUR BHAI BOT ⚡Made with ❤️ by MOMINUR ISLAM
 
 </p>
